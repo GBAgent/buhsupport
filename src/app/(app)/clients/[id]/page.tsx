@@ -53,14 +53,14 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
           <Row k="Кто привлёк" v={c.referrer?.name ?? c.referrerNote} />
           <Row k="Бухгалтер" v={c.accountant?.name ?? c.accountantNote} />
           <Row k="Клиент с" v={date(c.createdAt)} />
-          {c.notes && <p className="whitespace-pre-wrap rounded-lg bg-slate-50 p-2 text-slate-600">{c.notes}</p>}
+          {c.notes && <p className="whitespace-pre-wrap rounded-lg bg-soft p-2 text-muted">{c.notes}</p>}
         </div>
         <div className="card space-y-2 text-sm">
           <h2 className="font-semibold">Ежемесячно</h2>
           <Row k="Услуги (абонентские)" v={money(monthlyServices)} />
           <Row k="Хостинг баз 1С" v={money(hosting)} />
           <div className="flex justify-between border-t pt-2 font-semibold"><span>Итого в месяц</span><span>{money(monthly)}</span></div>
-          <div className={`flex justify-between ${paidNow >= monthly ? "text-emerald-600" : "text-red-600"}`}>
+          <div className={`flex justify-between ${paidNow >= monthly ? "text-ok" : "text-red"}`}>
             <span>Оплачено за {periodLabel(period)}</span><span>{money(paidNow)}</span>
           </div>
         </div>
@@ -75,14 +75,14 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
               <details key={b.id} className={`rounded-lg border p-3 ${b.active ? "" : "opacity-60"}`}>
                 <summary className="flex cursor-pointer flex-wrap items-center gap-x-4 gap-y-1 text-sm">
                   <span className="font-medium">🗄️ {b.name}</span>
-                  <span className="text-slate-500">{b.configuration} {b.version}</span>
-                  <span className="text-slate-500">{b.mode} · {b.users} польз.</span>
-                  {b.server && <span className="text-slate-500">сервер: {b.server}</span>}
+                  <span className="text-muted">{b.configuration} {b.version}</span>
+                  <span className="text-muted">{b.mode} · {b.users} польз.</span>
+                  {b.server && <span className="text-muted">сервер: {b.server}</span>}
                   <span className="ml-auto font-medium">{money(b.hostingPrice)}/мес</span>
-                  {!b.active && <Badge className="bg-slate-200">отключена</Badge>}
-                  {b.backup && <Badge className="bg-emerald-100 text-emerald-700">бэкап</Badge>}
+                  {!b.active && <Badge className="bg-soft text-muted">отключена</Badge>}
+                  {b.backup && <Badge className="bg-[rgba(30,154,96,.12)] text-ok">бэкап</Badge>}
                 </summary>
-                {b.comment && <p className="mt-2 text-sm text-slate-600">{b.comment}</p>}
+                {b.comment && <p className="mt-2 text-sm text-muted">{b.comment}</p>}
                 {canEdit && (
                   <div className="mt-3 border-t pt-3">
                     <BaseForm clientId={c.id} b={b} />
@@ -111,11 +111,11 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
               <tbody>
                 {c.services.map((s) => (
                   <tr key={s.id} className={s.active ? "" : "opacity-50"}>
-                    <td>{s.service.name}<div className="text-xs text-slate-500">{s.service.category}</div></td>
-                    <td>{money(s.price)}<span className="text-xs text-slate-500"> / {s.service.unit}</span></td>
+                    <td>{s.service.name}<div className="text-xs text-muted">{s.service.category}</div></td>
+                    <td>{money(s.price)}<span className="text-xs text-muted"> / {s.service.unit}</span></td>
                     <td>{s.quantity}</td>
                     <td className="text-xs">{date(s.startDate)}{s.endDate && <> — {date(s.endDate)}</>}</td>
-                    <td>{s.active ? <Badge className="bg-emerald-100 text-emerald-700">активна</Badge> : <Badge className="bg-slate-200">отключена</Badge>}</td>
+                    <td>{s.active ? <Badge className="bg-[rgba(30,154,96,.12)] text-ok">активна</Badge> : <Badge className="bg-soft text-muted">отключена</Badge>}</td>
                     <td className="text-xs">{s.comment}</td>
                     {canEdit && (
                       <td className="whitespace-nowrap">
@@ -193,7 +193,7 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
                 {c.tickets.map((t) => (
                   <tr key={t.id}>
                     <td><Link href={`/tickets/${t.number}`} className="link">#{t.number}</Link></td>
-                    <td className="text-xs text-slate-500">{dateTime(t.createdAt)}</td>
+                    <td className="text-xs text-muted">{dateTime(t.createdAt)}</td>
                     <td>{t.category}</td>
                     <td className="max-w-md">{t.description}</td>
                     <td><PriorityBadge p={t.priority} /></td>
@@ -213,7 +213,7 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
 function Row({ k, v }: { k: string; v: React.ReactNode }) {
   return (
     <div className="flex justify-between gap-3">
-      <span className="text-slate-500">{k}</span>
+      <span className="text-muted">{k}</span>
       <span className="text-right">{v || "—"}</span>
     </div>
   );

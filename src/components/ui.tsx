@@ -3,10 +3,10 @@ import { PRIORITY_LABEL, STATUS_LABEL } from "@/lib/format";
 
 export function PageHeader({ title, sub, children }: { title: string; sub?: string; children?: React.ReactNode }) {
   return (
-    <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+    <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
       <div>
-        <h1 className="text-2xl font-semibold">{title}</h1>
-        {sub && <p className="text-sm text-slate-500">{sub}</p>}
+        <h1 className="text-3xl leading-none font-semibold tracking-[-0.035em] md:text-[40px]">{title}</h1>
+        {sub && <p className="mt-2 text-sm text-muted">{sub}</p>}
       </div>
       <div className="flex flex-wrap gap-2">{children}</div>
     </div>
@@ -14,36 +14,39 @@ export function PageHeader({ title, sub, children }: { title: string; sub?: stri
 }
 
 const statusColor: Record<string, string> = {
-  NEW: "bg-sky-100 text-sky-800",
-  IN_PROGRESS: "bg-amber-100 text-amber-800",
-  DONE: "bg-emerald-100 text-emerald-800",
-  CANCELLED: "bg-slate-200 text-slate-600",
+  NEW: "bg-blue-bg text-blue",
+  IN_PROGRESS: "bg-warn-bg text-warn",
+  DONE: "bg-[rgba(30,154,96,.12)] text-ok",
+  CANCELLED: "bg-soft text-muted",
 };
 const prioColor: Record<string, string> = {
-  LOW: "bg-slate-100 text-slate-600",
-  MEDIUM: "bg-blue-100 text-blue-700",
-  HIGH: "bg-orange-100 text-orange-800",
-  CRITICAL: "bg-red-100 text-red-700",
+  LOW: "bg-soft text-muted",
+  MEDIUM: "bg-paper text-ink",
+  HIGH: "bg-warn-bg text-warn",
+  CRITICAL: "bg-red text-white",
 };
 
 export const Badge = ({ className = "", children }: { className?: string; children: React.ReactNode }) => (
-  <span className={`inline-block whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium ${className}`}>{children}</span>
+  <span className={`inline-block rounded-full px-2.5 py-1 text-xs leading-none font-medium whitespace-nowrap ${className}`}>{children}</span>
 );
 export const StatusBadge = ({ s }: { s: string }) => <Badge className={statusColor[s]}>{STATUS_LABEL[s]}</Badge>;
 export const PriorityBadge = ({ p }: { p: string }) => <Badge className={prioColor[p]}>{PRIORITY_LABEL[p]}</Badge>;
 
 export function Stat({ label, value, href, tone = "" }: { label: string; value: React.ReactNode; href?: string; tone?: string }) {
   const body = (
-    <div className={`card h-full ${href ? "hover:border-brand-500" : ""}`}>
-      <div className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</div>
-      <div className={`mt-1 text-2xl font-semibold ${tone}`}>{value}</div>
+    <div className={`card group h-full transition ${href ? "hover:border-ink" : ""}`}>
+      <div className="flex items-center justify-between text-xs font-medium tracking-wider text-muted uppercase">
+        {label}
+        {href && <span className="text-line transition group-hover:text-ink">↗</span>}
+      </div>
+      <div className={`mt-3 font-display text-3xl font-semibold tracking-[-0.03em] ${tone}`}>{value}</div>
     </div>
   );
   return href ? <Link href={href}>{body}</Link> : body;
 }
 
 export function Empty({ children }: { children: React.ReactNode }) {
-  return <div className="py-8 text-center text-sm text-slate-400">{children}</div>;
+  return <div className="py-10 text-center text-sm text-muted">{children}</div>;
 }
 
 export function Field({ label, children, className = "" }: { label: string; children: React.ReactNode; className?: string }) {

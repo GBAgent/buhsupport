@@ -28,8 +28,8 @@ export function UserForm({ u }: { u?: U }) {
         <button className="btn" disabled={pending}>{u ? "Сохранить" : "Добавить сотрудника"}</button>
       </div>
       <div className="flex items-end text-sm sm:col-span-2">
-        {state?.error && <span className="text-red-600">{state.error}</span>}
-        {state?.ok && <span className="text-emerald-600">Сохранено</span>}
+        {state?.error && <span className="text-red">{state.error}</span>}
+        {state?.ok && <span className="text-ok">Сохранено</span>}
       </div>
     </form>
   );

@@ -77,14 +77,14 @@ export default async function Clients({ searchParams }: { searchParams: SP }) {
                 <tr key={c.id}>
                   <td>
                     <Link href={`/clients/${c.id}`} className="link font-medium">{c.name}</Link>
-                    {c.status !== "ACTIVE" && <Badge className="ml-2 bg-slate-200 text-slate-600">{CLIENT_STATUS_LABEL[c.status]}</Badge>}
+                    {c.status !== "ACTIVE" && <Badge className="ml-2 bg-soft text-muted">{CLIENT_STATUS_LABEL[c.status]}</Badge>}
                   </td>
                   <td className="font-mono text-xs">{c.bin ?? "—"}</td>
-                  <td className="text-xs">{c.contactName}{c.phone && <div>{c.phone}</div>}{c.telegram && <div className="text-brand-600">@{c.telegram}</div>}</td>
-                  <td className="text-xs">{c.source ?? "—"}<div className="text-slate-500">{c.referrer?.name ?? c.referrerNote}</div></td>
+                  <td className="text-xs">{c.contactName}{c.phone && <div>{c.phone}</div>}{c.telegram && <div className="text-blue">@{c.telegram}</div>}</td>
+                  <td className="text-xs">{c.source ?? "—"}<div className="text-muted">{c.referrer?.name ?? c.referrerNote}</div></td>
                   <td className="text-xs">{c.accountant?.name ?? c.accountantNote ?? "—"}</td>
-                  <td className="text-xs">{c.bases.length ? <>{c.bases.length} шт.<div className="text-slate-500">{money(c.bases.reduce((a, b) => a + b.hostingPrice, 0))}/мес</div></> : "—"}</td>
-                  <td>{c._count.tickets ? <Badge className="bg-amber-100 text-amber-800">{c._count.tickets} откр.</Badge> : ""}</td>
+                  <td className="text-xs">{c.bases.length ? <>{c.bases.length} шт.<div className="text-muted">{money(c.bases.reduce((a, b) => a + b.hostingPrice, 0))}/мес</div></> : "—"}</td>
+                  <td>{c._count.tickets ? <Badge className="bg-warn-bg text-warn">{c._count.tickets} откр.</Badge> : ""}</td>
                 </tr>
               ))}
             </tbody>

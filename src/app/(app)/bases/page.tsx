@@ -31,7 +31,7 @@ export default async function Bases({ searchParams }: { searchParams: Promise<{ 
         <Stat label="Активных баз" value={active.length} />
         <Stat label="Пользователей 1С" value={active.reduce((a, b) => a + b.users, 0)} />
         <Stat label="Хостинг в месяц" value={money(active.reduce((a, b) => a + b.hostingPrice, 0))} />
-        <Stat label="Без бэкапа" value={active.filter((b) => !b.backup).length} tone={active.some((b) => !b.backup) ? "text-red-600" : ""} />
+        <Stat label="Без бэкапа" value={active.filter((b) => !b.backup).length} tone={active.some((b) => !b.backup) ? "text-red" : ""} />
       </div>
       <form className="card mb-4 flex flex-wrap gap-3">
         <input name="q" defaultValue={q} placeholder="База, конфигурация, клиент" className="input max-w-sm" />
@@ -50,12 +50,12 @@ export default async function Bases({ searchParams }: { searchParams: Promise<{ 
                 <tr key={b.id} className={b.active ? "" : "opacity-50"}>
                   <td><Link href={`/clients/${b.clientId}`} className="link">{b.client.name}</Link></td>
                   <td className="font-medium">{b.name}</td>
-                  <td className="text-xs">{b.configuration}<div className="text-slate-500">{b.version}</div></td>
+                  <td className="text-xs">{b.configuration}<div className="text-muted">{b.version}</div></td>
                   <td className="text-xs">{b.server ?? "—"}</td>
                   <td className="text-xs">{b.mode}</td>
                   <td>{b.users}</td>
                   <td className="whitespace-nowrap">{money(b.hostingPrice)}</td>
-                  <td>{!b.active ? <Badge className="bg-slate-200">откл.</Badge> : !b.backup ? <Badge className="bg-red-100 text-red-700">нет бэкапа</Badge> : null}</td>
+                  <td>{!b.active ? <Badge className="bg-soft text-muted">откл.</Badge> : !b.backup ? <Badge className="bg-red-bg text-red">нет бэкапа</Badge> : null}</td>
                 </tr>
               ))}
             </tbody>

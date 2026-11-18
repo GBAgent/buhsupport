@@ -41,8 +41,8 @@ export default async function Dashboard() {
       </PageHeader>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <Stat label="Новые заявки" value={newT} href="/tickets?status=NEW" tone={newT ? "text-sky-600" : ""} />
-        <Stat label="В работе" value={workT} href="/tickets?status=IN_PROGRESS" tone={workT ? "text-amber-600" : ""} />
+        <Stat label="Новые заявки" value={newT} href="/tickets?status=NEW" tone={newT ? "text-blue" : ""} />
+        <Stat label="В работе" value={workT} href="/tickets?status=IN_PROGRESS" tone={workT ? "text-warn" : ""} />
         <Stat label="Активные клиенты" value={clients} href="/clients" />
         <Stat label="Базы 1С на хостинге" value={bases} href="/bases" />
       </div>
@@ -50,8 +50,8 @@ export default async function Dashboard() {
       {!isAcc && (
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
           <Stat label={`Начислено за ${periodLabel(period)}`} value={money(expected)} href="/payments" />
-          <Stat label="Оплачено" value={money(paidTotal)} href="/payments" tone="text-emerald-600" />
-          <Stat label="Не оплатили" value={debtors} href={`/payments?period=${period}`} tone={debtors ? "text-red-600" : ""} />
+          <Stat label="Оплачено" value={money(paidTotal)} href="/payments" tone="text-ok" />
+          <Stat label="Не оплатили" value={debtors} href={`/payments?period=${period}`} tone={debtors ? "text-red" : ""} />
         </div>
       )}
 
@@ -70,11 +70,11 @@ export default async function Dashboard() {
                       <td><Link href={`/tickets/${t.number}`} className="link font-medium">#{t.number}</Link></td>
                       <td>
                         <div className="font-medium">{t.client?.name ?? t.company ?? "—"}</div>
-                        <div className="line-clamp-1 text-xs text-slate-500">{t.description}</div>
+                        <div className="line-clamp-1 text-xs text-muted">{t.description}</div>
                       </td>
                       <td><StatusBadge s={t.status} /></td>
                       <td><PriorityBadge p={t.priority} /></td>
-                      <td className="text-xs text-slate-500">{t.assignee?.name ?? "—"}<br />{dateTime(t.createdAt)}</td>
+                      <td className="text-xs text-muted">{t.assignee?.name ?? "—"}<br />{dateTime(t.createdAt)}</td>
                     </tr>
                   ))}
                 </tbody>

@@ -47,7 +47,7 @@ export default async function Tickets({ searchParams }: { searchParams: SP }) {
 
       <div className="mb-3 flex flex-wrap gap-1">
         {tabs.map(([k, l]) => (
-          <Link key={k} href={`/tickets?${qs(k)}`} className={`rounded-lg px-3 py-1.5 text-sm ${status === k ? "bg-brand-600 text-white" : "bg-white text-slate-600 hover:bg-slate-100"}`}>{l}</Link>
+          <Link key={k} href={`/tickets?${qs(k)}`} className={`rounded-full px-4 py-2 text-sm font-medium transition ${status === k ? "bg-ink text-white" : "bg-white text-ink hover:bg-soft"}`}>{l}</Link>
         ))}
       </div>
 
@@ -78,22 +78,22 @@ export default async function Tickets({ searchParams }: { searchParams: SP }) {
                   <td><Link href={`/tickets/${t.number}`} className="link font-medium">#{t.number}</Link></td>
                   <td>
                     {t.client ? <Link href={`/clients/${t.client.id}`} className="link">{t.client.name}</Link> : <span>{t.company ?? "—"}</span>}
-                    <div className="font-mono text-xs text-slate-500">{t.bin}</div>
-                    {!t.client && <div className="text-xs text-amber-600">не привязан к клиенту</div>}
+                    <div className="font-mono text-xs text-muted">{t.bin}</div>
+                    {!t.client && <div className="text-xs text-warn">не привязан к клиенту</div>}
                   </td>
                   <td className="text-xs">{t.category}</td>
-                  <td className="max-w-xs"><div className="line-clamp-2">{t.description}</div><div className="text-xs text-slate-500">{t.contact} {t.source === "telegram" && "· Telegram"}</div></td>
+                  <td className="max-w-xs"><div className="line-clamp-2">{t.description}</div><div className="text-xs text-muted">{t.contact} {t.source === "telegram" && "· Telegram"}</div></td>
                   <td><PriorityBadge p={t.priority} /></td>
                   <td><StatusBadge s={t.status} /></td>
                   <td className="text-xs">{t.assignee?.name ?? "—"}</td>
-                  <td className="whitespace-nowrap text-xs text-slate-500">{dateTime(t.createdAt)}</td>
+                  <td className="whitespace-nowrap text-xs text-muted">{dateTime(t.createdAt)}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         )}
       </div>
-      <p className="mt-2 text-xs text-slate-400">Статусы: {Object.values(STATUS_LABEL).join(" · ")}</p>
+      <p className="mt-2 text-xs text-muted">Статусы: {Object.values(STATUS_LABEL).join(" · ")}</p>
     </>
   );
 }

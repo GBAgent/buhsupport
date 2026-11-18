@@ -40,8 +40,8 @@ export default async function Payments({ searchParams }: { searchParams: Promise
       </PageHeader>
       <div className="mb-4 grid gap-4 sm:grid-cols-3">
         <Stat label="Начислено (услуги + хостинг)" value={money(expected)} />
-        <Stat label="Оплачено" value={money(paidSum)} tone="text-emerald-600" />
-        <Stat label="Задолженность" value={money(debtSum)} tone={debtSum ? "text-red-600" : ""} />
+        <Stat label="Оплачено" value={money(paidSum)} tone="text-ok" />
+        <Stat label="Задолженность" value={money(debtSum)} tone={debtSum ? "text-red" : ""} />
       </div>
 
       <div className="card overflow-x-auto p-0">
@@ -54,10 +54,10 @@ export default async function Payments({ searchParams }: { searchParams: Promise
                   <td><Link className="link" href={`/clients/${r.client.id}`}>{r.client.name}</Link></td>
                   <td className="text-xs">{r.client.accountantNote ?? ""}</td>
                   <td>{money(r.services)}</td>
-                  <td>{money(r.hosting)}<span className="text-xs text-slate-500"> ({r.client.bases.length} баз)</span></td>
+                  <td>{money(r.hosting)}<span className="text-xs text-muted"> ({r.client.bases.length} баз)</span></td>
                   <td className="font-medium">{money(r.total)}</td>
-                  <td className="text-emerald-700">{money(r.paid)}</td>
-                  <td>{r.debt > 0 ? <Badge className="bg-red-100 text-red-700">{money(r.debt)}</Badge> : <Badge className="bg-emerald-100 text-emerald-700">оплачено</Badge>}</td>
+                  <td className="text-ok">{money(r.paid)}</td>
+                  <td>{r.debt > 0 ? <Badge className="bg-red-bg text-red">{money(r.debt)}</Badge> : <Badge className="bg-[rgba(30,154,96,.12)] text-ok">оплачено</Badge>}</td>
                 </tr>
               ))}
             </tbody>

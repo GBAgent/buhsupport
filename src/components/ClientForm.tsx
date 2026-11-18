@@ -58,7 +58,7 @@ export function ClientForm({ client = {}, users }: { client?: C; users: U[] }) {
         <Field label="Заметки" className="sm:col-span-2"><textarea name="notes" rows={3} defaultValue={v("notes")} className="input" /></Field>
       </section>
 
-      {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
+      {state?.error && <p className="text-sm text-red">{state.error}</p>}
       <button className="btn" disabled={pending}>{pending ? "Сохранение…" : "Сохранить"}</button>
     </form>
   );

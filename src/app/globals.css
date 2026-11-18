@@ -1,25 +1,52 @@
 @import "tailwindcss";
 
+/* Фирменный стиль glav-buh.kz */
 @theme {
-  --color-brand-50: #eef6ff;
-  --color-brand-100: #d9eaff;
-  --color-brand-500: #2f7cf6;
-  --color-brand-600: #1f63d6;
-  --color-brand-700: #1a4fab;
+  --font-sans: var(--font-golos), "Inter Tight", Arial, sans-serif;
+  --font-display: var(--font-inter-tight), "Helvetica Neue", Arial, sans-serif;
+
+  --color-ink: #0a0a0a;
+  --color-ink-2: #1b1b1b;
+  --color-muted: #6b6b6b;
+  --color-line: #dedede;
+  --color-paper: #f1f1f1;
+  --color-soft: #f7f7f7;
+  --color-red: #e1232b;
+  --color-red-d: #c11a21;
+  --color-red-bg: #fde8e9;
+  --color-ok: #1e9a60;
+  --color-warn: #a86a08;
+  --color-warn-bg: #fbf1e0;
+  --color-blue: #2f6fe0;
+  --color-blue-bg: #e8f0fd;
+
+  /* совместимость со старыми классами brand-* */
+  --color-brand-50: #f1f1f1;
+  --color-brand-100: #dedede;
+  --color-brand-500: #0a0a0a;
+  --color-brand-600: #0a0a0a;
+  --color-brand-700: #0a0a0a;
 }
 
-body { @apply bg-slate-50 text-slate-800 antialiased; }
+body { @apply bg-paper font-sans text-ink antialiased; }
+h1, h2, h3 { @apply font-display; letter-spacing: -0.02em; }
+::selection { background: var(--color-red); color: #fff; }
 
 @layer components {
-  .input { @apply w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100; }
-  .label { @apply mb-1 block text-xs font-medium text-slate-500; }
-  .btn { @apply inline-flex items-center justify-center gap-1 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-50 cursor-pointer; }
-  .btn-ghost { @apply inline-flex items-center justify-center gap-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-slate-100 cursor-pointer; }
-  .btn-danger { @apply inline-flex items-center justify-center rounded-lg px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 cursor-pointer; }
-  .card { @apply rounded-xl border border-slate-200 bg-white p-5 shadow-sm; }
+  .input { @apply w-full rounded-xl border border-line bg-white px-3.5 py-2.5 text-sm outline-none transition placeholder:text-[#aeb6c2] focus:border-ink focus:ring-2 focus:ring-ink/10; }
+  .label { @apply mb-1.5 block text-xs font-medium text-muted; }
+  .btn { @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-full bg-ink px-5 py-2.5 text-sm font-medium whitespace-nowrap text-white transition hover:bg-ink-2 active:scale-[.98] disabled:opacity-50; }
+  .btn-red { @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-full bg-red px-5 py-2.5 text-sm font-medium whitespace-nowrap text-white transition hover:bg-red-d active:scale-[.98]; }
+  .btn-ghost { @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-full border border-ink bg-transparent px-4 py-2.5 text-sm font-medium whitespace-nowrap text-ink transition hover:bg-ink hover:text-white active:scale-[.98]; }
+  .btn-danger { @apply inline-flex cursor-pointer items-center justify-center rounded-full px-3 py-1.5 text-sm text-red hover:bg-red-bg; }
+  .card { @apply rounded-2xl border border-line/70 bg-white p-5 md:p-6; }
   .table { @apply w-full text-sm; }
-  .table th { @apply border-b border-slate-200 px-3 py-2 text-left text-xs font-medium uppercase tracking-wide text-slate-500; }
-  .table td { @apply border-b border-slate-100 px-3 py-2 align-top; }
-  .table tr:hover td { @apply bg-slate-50; }
-  .link { @apply text-brand-600 hover:underline; }
+  .table th { @apply border-b border-line px-3 py-3 text-left text-[11px] font-medium tracking-wider text-muted uppercase; }
+  .table td { @apply border-b border-soft px-3 py-3 align-top; }
+  .table tbody tr:last-child td { @apply border-b-0; }
+  .table tr:hover td { @apply bg-soft; }
+  .link { @apply font-medium text-ink underline decoration-line decoration-2 underline-offset-4 transition hover:decoration-red; }
+  .dot { @apply inline-block h-2 w-2 rounded-full bg-red; }
 }
+
+@keyframes navbar { 0% { transform: translateX(-100%); } 100% { transform: translateX(300%); } }

@@ -10,8 +10,8 @@ export function PasswordForm() {
       <h2 className="font-semibold">Сменить пароль</h2>
       <Field label="Текущий пароль"><input name="current" type="password" required className="input" autoComplete="current-password" /></Field>
       <Field label="Новый пароль (мин. 8)"><input name="next" type="password" required minLength={8} className="input" autoComplete="new-password" /></Field>
-      {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
-      {state?.ok && <p className="text-sm text-emerald-600">Пароль изменён</p>}
+      {state?.error && <p className="text-sm text-red">{state.error}</p>}
+      {state?.ok && <p className="text-sm text-ok">Пароль изменён</p>}
       <button className="btn" disabled={pending}>Сменить</button>
     </form>
   );

@@ -33,17 +33,17 @@ export default async function TicketPage({ params }: { params: Promise<{ number:
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
           <div className="card space-y-3">
-            <div className="flex flex-wrap gap-2"><StatusBadge s={t.status} /><PriorityBadge p={t.priority} /><span className="text-sm text-slate-500">{t.category}</span></div>
+            <div className="flex flex-wrap gap-2"><StatusBadge s={t.status} /><PriorityBadge p={t.priority} /><span className="text-sm text-muted">{t.category}</span></div>
             <p className="whitespace-pre-wrap text-base">{t.description}</p>
             <div className="grid gap-2 border-t pt-3 text-sm sm:grid-cols-2">
-              <div><span className="text-slate-500">Компания: </span>{t.client ? <Link className="link" href={`/clients/${t.client.id}`}>{t.client.name}</Link> : t.company ?? "—"}</div>
-              <div><span className="text-slate-500">БИН/ИИН: </span><span className="font-mono">{t.bin ?? t.client?.bin ?? "—"}</span></div>
-              <div><span className="text-slate-500">Клиент: </span>{t.contact?.startsWith("@") ? <a className="link" target="_blank" href={`https://t.me/${t.contact.slice(1)}`}>{t.contact}</a> : t.contact ?? "—"}</div>
-              <div><span className="text-slate-500">Исполнитель: </span>{t.assignee?.name ?? "—"}</div>
-              {t.closedAt && <div><span className="text-slate-500">Закрыта: </span>{dateTime(t.closedAt)}</div>}
+              <div><span className="text-muted">Компания: </span>{t.client ? <Link className="link" href={`/clients/${t.client.id}`}>{t.client.name}</Link> : t.company ?? "—"}</div>
+              <div><span className="text-muted">БИН/ИИН: </span><span className="font-mono">{t.bin ?? t.client?.bin ?? "—"}</span></div>
+              <div><span className="text-muted">Клиент: </span>{t.contact?.startsWith("@") ? <a className="link" target="_blank" href={`https://t.me/${t.contact.slice(1)}`}>{t.contact}</a> : t.contact ?? "—"}</div>
+              <div><span className="text-muted">Исполнитель: </span>{t.assignee?.name ?? "—"}</div>
+              {t.closedAt && <div><span className="text-muted">Закрыта: </span>{dateTime(t.closedAt)}</div>}
             </div>
             {!t.client && t.bin && user.role !== "ACCOUNTANT" && (
-              <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-800">
+              <p className="rounded-lg bg-warn-bg p-3 text-sm text-warn">
                 Клиента с БИН {t.bin} нет в базе. <Link className="link" href="/clients/new">Добавить клиента</Link> — заявки с этим БИН привяжутся автоматически.
               </p>
             )}
@@ -53,12 +53,12 @@ export default async function TicketPage({ params }: { params: Promise<{ number:
             <h2 className="mb-3 font-semibold">История</h2>
             <ul className="space-y-3">
               {t.comments.map((c) => (
-                <li key={c.id} className="rounded-lg bg-slate-50 p-3 text-sm">
-                  <div className="mb-1 text-xs text-slate-500">{c.author?.name ?? "Бот"} · {dateTime(c.createdAt)}</div>
+                <li key={c.id} className="rounded-lg bg-soft p-3 text-sm">
+                  <div className="mb-1 text-xs text-muted">{c.author?.name ?? "Бот"} · {dateTime(c.createdAt)}</div>
                   <div className="whitespace-pre-wrap">{c.text}</div>
                 </li>
               ))}
-              {t.comments.length === 0 && <li className="text-sm text-slate-400">Пока пусто</li>}
+              {t.comments.length === 0 && <li className="text-sm text-muted">Пока пусто</li>}
             </ul>
           </div>
         </div>

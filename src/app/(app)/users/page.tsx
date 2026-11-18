@@ -16,7 +16,7 @@ export default async function Users() {
       <div className="card mb-6">
         <h2 className="mb-3 font-semibold">Добавить сотрудника</h2>
         <UserForm />
-        <p className="mt-3 text-xs text-slate-500">
+        <p className="mt-3 text-xs text-muted">
           Администратор — полный доступ. IT-специалист — заявки, клиенты, базы, оплаты. Бухгалтер — видит только своих клиентов и их заявки.
           Telegram-ник нужен, чтобы заявки, взятые в работу в боте, назначались на сотрудника.
         </p>
@@ -26,11 +26,11 @@ export default async function Users() {
           <details key={u.id} className={`card py-3 ${u.active ? "" : "opacity-60"}`}>
             <summary className="flex cursor-pointer flex-wrap items-center gap-3 text-sm">
               <span className="font-medium">{u.name}</span>
-              <span className="text-slate-500">{u.email}</span>
-              <Badge className="bg-brand-50 text-brand-700">{ROLE_LABEL[u.role]}</Badge>
-              {u.telegram && <span className="text-brand-600">@{u.telegram}</span>}
-              {!u.active && <Badge className="bg-slate-200">отключён</Badge>}
-              <span className="ml-auto text-xs text-slate-500">
+              <span className="text-muted">{u.email}</span>
+              <Badge className="bg-paper text-ink">{ROLE_LABEL[u.role]}</Badge>
+              {u.telegram && <span className="text-blue">@{u.telegram}</span>}
+              {!u.active && <Badge className="bg-soft text-muted">отключён</Badge>}
+              <span className="ml-auto text-xs text-muted">
                 клиентов: {u._count.accountantClients} · привлёк: {u._count.referredClients} · заявок: {u._count.assignedTickets} · с {date(u.createdAt)}
               </span>
             </summary>

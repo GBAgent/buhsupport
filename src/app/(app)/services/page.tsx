@@ -25,11 +25,11 @@ export default async function Services() {
                 <details key={s.id} className={`py-2 ${s.active ? "" : "opacity-50"}`}>
                   <summary className="flex cursor-pointer flex-wrap items-center gap-3 text-sm">
                     <span className="font-medium">{s.name}</span>
-                    {s._count.clientServices > 0 && <Badge className="bg-brand-50 text-brand-700">{s._count.clientServices} клиентов</Badge>}
-                    {!s.active && <Badge className="bg-slate-200">скрыта</Badge>}
+                    {s._count.clientServices > 0 && <Badge className="bg-paper text-ink">{s._count.clientServices} клиентов</Badge>}
+                    {!s.active && <Badge className="bg-soft text-muted">скрыта</Badge>}
                     <span className="ml-auto">{s.defaultPrice ? money(s.defaultPrice) : "по договорённости"} / {s.unit}</span>
                   </summary>
-                  {s.description && <p className="mt-1 text-sm text-slate-500">{s.description}</p>}
+                  {s.description && <p className="mt-1 text-sm text-muted">{s.description}</p>}
                   {isAdmin && <div className="mt-3"><ServiceForm s={s} /></div>}
                 </details>
               ))}
