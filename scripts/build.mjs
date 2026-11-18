@@ -28,10 +28,32 @@ const runDb = (cmd) => {
 
 const hostOf = (u) => { try { const x = new URL(u); return `${x.hostname}:${x.port || 5432}`; } catch { return "НЕКОРРЕКТНАЯ СТРОКА"; } };
 
+// Диагностика строки подключения без вывода пароля
+function describe(name, u) {
+  if (!u) return console.log(`${name}: не задан`);
+  const raw = u;
+  const trimmed = u.trim();
+  try {
+    const x = new URL(trimmed);
+    const pw = decodeURIComponent(x.password);
+    console.log(
+      `${name}: пользователь=${decodeURIComponent(x.username)} сервер=${x.hostname}:${x.port || 5432} база=${x.pathname.slice(1)}` +
+      ` | пароль: длина ${pw.length}, спецсимволы: ${/[^A-Za-z0-9]/.test(pw) ? "ЕСТЬ" : "нет"}, скобки []: ${/[\[\]]/.test(raw) ? "ЕСТЬ" : "нет"}` +
+      `${raw !== trimmed ? " | ⚠ ПРОБЕЛЫ/ПЕРЕНОСЫ по краям" : ""}${/^["']/.test(trimmed) ? " | ⚠ КАВЫЧКИ в начале" : ""}`
+    );
+    return pw;
+  } catch {
+    console.log(`${name}: ❌ не разбирается как адрес — проверьте кавычки и пробелы`);
+  }
+}
+
 run("npx prisma generate");
 
 if (directUrl) {
   console.log(`База для миграций: ${hostOf(directUrl)}; для сайта: ${hostOf(runtimeUrl ?? "")}`);
+  const p1 = describe("DATABASE_URL", env.DATABASE_URL);
+  const p2 = describe("DIRECT_URL", env.DIRECT_URL);
+  if (p1 !== undefined && p2 !== undefined) console.log(`Пароли в DATABASE_URL и DIRECT_URL ${p1 === p2 ? "совпадают" : "⚠ РАЗНЫЕ"}`);
   if (directUrl.includes("[YOUR-PASSWORD]") || (runtimeUrl ?? "").includes("[YOUR-PASSWORD]")) {
     console.error("❌ В DATABASE_URL / DIRECT_URL остался текст [YOUR-PASSWORD] — замените его на пароль базы.");
     process.exit(1);
