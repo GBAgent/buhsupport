@@ -1,0 +1,168 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN      // полный доступ
+  ENGINEER   // IT-специалист: заявки, клиенты, базы
+  ACCOUNTANT // бухгалтер: видит своих клиентов
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  passwordHash String
+  role         Role     @default(ENGINEER)
+  telegram     String?
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  accountantClients Client[] @relation("ClientAccountant")
+  referredClients   Client[] @relation("ClientReferrer")
+  assignedTickets   Ticket[] @relation("TicketAssignee")
+  comments          TicketComment[]
+}
+
+enum ClientStatus {
+  ACTIVE
+  PAUSED
+  LEFT
+}
+
+model Client {
+  id         String       @id @default(cuid())
+  name       String
+  bin        String?      @unique // БИН / ИИН
+  contactName String?
+  phone      String?
+  email      String?
+  telegram   String?
+  address    String?
+  status     ClientStatus @default(ACTIVE)
+
+  source       String?  // откуда пришёл: Telegram, сайт, рекомендация, 2ГИС...
+  referrerId   String?  // кто привлёк (сотрудник)
+  referrer     User?    @relation("ClientReferrer", fields: [referrerId], references: [id], onDelete: SetNull)
+  referrerNote String?  // кто привлёк, если не сотрудник (партнёр, клиент)
+  accountantId String?  // бухгалтер
+  accountant   User?    @relation("ClientAccountant", fields: [accountantId], references: [id], onDelete: SetNull)
+  accountantNote String? // бухгалтер клиента, если не наш сотрудник
+
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  services ClientService[]
+  bases    Base1C[]
+  payments Payment[]
+  tickets  Ticket[]
+}
+
+model Service {
+  id           String  @id @default(cuid())
+  name         String  @unique
+  category     String  // 1С, Хостинг, Bitrix24, Оборудование...
+  description  String?
+  defaultPrice Int     @default(0) // ₸
+  unit         String  @default("мес") // мес / разово / час
+  active       Boolean @default(true)
+
+  clientServices ClientService[]
+}
+
+model ClientService {
+  id        String    @id @default(cuid())
+  clientId  String
+  client    Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  serviceId String
+  service   Service   @relation(fields: [serviceId], references: [id])
+  price     Int       // ₸ за период
+  quantity  Int       @default(1)
+  startDate DateTime  @default(now())
+  endDate   DateTime?
+  active    Boolean   @default(true)
+  comment   String?
+}
+
+model Base1C {
+  id            String   @id @default(cuid())
+  clientId      String
+  client        Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  name          String
+  configuration String?  // БП 3.0, ЗУП 3.1, УТ 11...
+  version       String?
+  server        String?  // сервер / кластер
+  mode          String   @default("Файловая") // Файловая / Клиент-сервер
+  users         Int      @default(1)
+  hostingPrice  Int      @default(0) // ₸ в месяц
+  backup        Boolean  @default(true)
+  active        Boolean  @default(true)
+  comment       String?
+  createdAt     DateTime @default(now())
+}
+
+model Payment {
+  id        String   @id @default(cuid())
+  clientId  String
+  client    Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  amount    Int      // ₸
+  period    String   // YYYY-MM — за какой месяц
+  paidAt    DateTime @default(now())
+  method    String   @default("Kaspi") // Kaspi, безнал, наличные
+  comment   String?
+  createdAt DateTime @default(now())
+}
+
+enum TicketStatus {
+  NEW
+  IN_PROGRESS
+  DONE
+  CANCELLED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+model Ticket {
+  id          String       @id @default(cuid())
+  number      Int          @unique @default(autoincrement())
+  clientId    String?
+  client      Client?      @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  company     String?      // как указал клиент
+  bin         String?
+  category    String       @default("1С")
+  priority    Priority     @default(MEDIUM)
+  description String
+  status      TicketStatus @default(NEW)
+  assigneeId  String?
+  assignee    User?        @relation("TicketAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  source      String       @default("web") // telegram / web / phone
+  contact     String?      // @telegram клиента / телефон
+  telegramChatId String?
+  telegramMessageId String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  closedAt    DateTime?
+
+  comments TicketComment[]
+}
+
+model TicketComment {
+  id        String   @id @default(cuid())
+  ticketId  String
+  ticket    Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  authorId  String?
+  author    User?    @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  text      String
+  createdAt DateTime @default(now())
+}
