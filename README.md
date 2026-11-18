@@ -30,9 +30,12 @@ npm run dev
 
 ## Деплой на Vercel
 
-1. Создать базу PostgreSQL (Neon через Vercel Marketplace или любой Postgres).
-2. В проекте Vercel задать переменные: `DATABASE_URL`, `AUTH_SECRET` (`openssl rand -base64 32`), `BOT_API_KEY`.
-3. Один раз выполнить с этими переменными: `npx prisma migrate deploy && npm run db:seed` (с `ADMIN_EMAIL` и `ADMIN_PASSWORD`).
+1. Vercel → проект → **Storage** → подключить **Neon (Postgres)**. Переменные `DATABASE_URL` / `DATABASE_URL_UNPOOLED` добавятся сами.
+2. **Settings → Environment Variables**: `AUTH_SECRET` (любая длинная случайная строка), `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `BOT_API_KEY`.
+3. **Deployments → Redeploy.** При сборке автоматически применяются миграции и создаётся администратор (если его ещё нет).
+4. Проверка: `https://<домен>/api/health` — все пункты должны быть `true` / `ok`.
+
+Забыли пароль администратора: задать новый `ADMIN_PASSWORD`, добавить `ADMIN_RESET_PASSWORD=1`, сделать Redeploy, войти и удалить `ADMIN_RESET_PASSWORD`.
 
 ## API для Telegram-бота
 

@@ -20,14 +20,17 @@ const SERVICES = [
 async function main() {
   const email = (process.env.ADMIN_EMAIL || "dev@glav-buh.kz").toLowerCase();
   const password = process.env.ADMIN_PASSWORD;
-  if (!password) throw new Error("Задайте ADMIN_PASSWORD для создания администратора");
-
   const existing = await db.user.findUnique({ where: { email } });
-  if (!existing) {
+  if (!existing && !password) {
+    console.warn(`⚠ ADMIN_PASSWORD не задан — администратор ${email} не создан`);
+  } else if (!existing && password) {
     await db.user.create({
       data: { email, name: "Администратор", role: "ADMIN", passwordHash: await bcrypt.hash(password, 10) },
     });
     console.log(`Создан администратор ${email}`);
+  } else if (existing && process.env.ADMIN_RESET_PASSWORD === "1" && password) {
+    await db.user.update({ where: { email }, data: { passwordHash: await bcrypt.hash(password, 10), active: true, role: "ADMIN" } });
+    console.log(`Пароль администратора ${email} сброшен (ADMIN_RESET_PASSWORD=1)`);
   } else {
     console.log(`Администратор ${email} уже существует — пароль не меняю`);
   }

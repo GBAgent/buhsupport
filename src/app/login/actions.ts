@@ -8,7 +8,23 @@ import { SESSION_COOKIE, sessionCookieOptions, signSession } from "@/lib/session
 export async function login(_: unknown, fd: FormData) {
   const email = String(fd.get("email") || "").trim().toLowerCase();
   const password = String(fd.get("password") || "");
-  const user = await db.user.findUnique({ where: { email } });
+
+  if (!process.env.AUTH_SECRET) {
+    return { error: "Сервер не настроен: не задана переменная AUTH_SECRET", email };
+  }
+  let user;
+  try {
+    user = await db.user.findUnique({ where: { email } });
+  } catch (e) {
+    console.error("login: db error", e);
+    const msg = String((e as Error).message);
+    return {
+      error: msg.includes("does not exist")
+        ? "База данных пуста: не выполнены миграции. Пересоберите проект (Redeploy)."
+        : "Нет подключения к базе данных. Проверьте DATABASE_URL на Vercel.",
+      email,
+    };
+  }
   if (!user || !user.active || !(await bcrypt.compare(password, user.passwordHash))) {
     return { error: "Неверная почта или пароль", email };
   }
