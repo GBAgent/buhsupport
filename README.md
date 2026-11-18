@@ -30,7 +30,7 @@ npm run dev
 
 ## Деплой на Vercel
 
-1. Vercel → проект → **Storage** → подключить **Neon (Postgres)**. Переменные `DATABASE_URL` / `DATABASE_URL_UNPOOLED` добавятся сами.
+1. Vercel → проект → **Storage** → подключить **Neon (Postgres)**. Переменные `DATABASE_URL` / `DATABASE_URL_UNPOOLED` добавятся сами. Для Supabase: Connect → ORMs → Prisma, скопировать `DATABASE_URL` (порт 6543, `?pgbouncer=true`) и `DIRECT_URL` (порт 5432) в переменные Vercel.
 2. **Settings → Environment Variables**: `AUTH_SECRET` (любая длинная случайная строка), `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `BOT_API_KEY`.
 3. **Deployments → Redeploy.** При сборке автоматически применяются миграции и создаётся администратор (если его ещё нет).
 4. Проверка: `https://<домен>/api/health` — все пункты должны быть `true` / `ok`.
