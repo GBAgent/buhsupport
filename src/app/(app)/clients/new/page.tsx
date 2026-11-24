@@ -11,7 +11,7 @@ export default async function NewClient() {
   return (
     <>
       <PageHeader title="Новый клиент" />
-      <ClientForm users={users} />
+      <ClientForm users={users} payers={await db.payer.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } })} />
     </>
   );
 }

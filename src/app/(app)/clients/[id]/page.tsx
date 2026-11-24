@@ -4,7 +4,10 @@ import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { CLIENT_STATUS_LABEL, PAY_METHODS, currentPeriod, date, dateTime, money, periodLabel } from "@/lib/format";
 import { Badge, Empty, Field, PageHeader, PriorityBadge, StatusBadge } from "@/components/ui";
+import { clientDebt, monthLabel } from "@/lib/billing";
+import { Secret } from "@/components/Secret";
 import {
+  markChecked,
   addClientService, addPayment, deleteBase, deleteClientService, deletePayment, saveBase, toggleClientService,
 } from "@/lib/actions/clients";
 
@@ -14,7 +17,7 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
   const c = await db.client.findUnique({
     where: { id },
     include: {
-      accountant: true, referrer: true,
+      accountant: true, referrer: true, payer: true,
       services: { include: { service: true }, orderBy: [{ active: "desc" }, { startDate: "desc" }] },
       bases: { orderBy: [{ active: "desc" }, { name: "asc" }] },
       payments: { orderBy: [{ period: "desc" }, { paidAt: "desc" }], take: 24 },
@@ -28,12 +31,15 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
   const monthlyServices = c.services.filter((s) => s.active && s.service.unit === "мес").reduce((a, s) => a + s.price * s.quantity, 0);
   const hosting = c.bases.filter((b) => b.active).reduce((a, b) => a + b.hostingPrice, 0);
   const period = currentPeriod();
-  const paidNow = c.payments.filter((p) => p.period === period).reduce((a, p) => a + p.amount, 0);
+  const debt = clientDebt(c);
   const monthly = monthlyServices + hosting;
 
   return (
     <>
       <PageHeader title={c.name} sub={[c.bin && `БИН/ИИН ${c.bin}`, CLIENT_STATUS_LABEL[c.status]].filter(Boolean).join(" · ")}>
+        {c.needsCheck && canEdit && (
+          <form action={markChecked}><input type="hidden" name="id" value={c.id} /><button className="btn-red">✓ Данные проверены</button></form>
+        )}
         <Link href={`/tickets/new?client=${c.id}`} className="btn-ghost">+ Заявка</Link>
         {canEdit && <Link href={`/clients/${c.id}/edit`} className="btn">Редактировать</Link>}
       </PageHeader>
@@ -49,6 +55,7 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
         </div>
         <div className="card space-y-2 text-sm">
           <h2 className="font-semibold">Источник и бухгалтер</h2>
+          <Row k="Плательщик" v={c.payer && (user.role === "ACCOUNTANT" ? c.payer.name : <Link className="link" href={`/payers/${c.payer.id}`}>{c.payer.name}</Link>)} />
           <Row k="Откуда пришёл" v={c.source} />
           <Row k="Кто привлёк" v={c.referrer?.name ?? c.referrerNote} />
           <Row k="Бухгалтер" v={c.accountant?.name ?? c.accountantNote} />
@@ -60,11 +67,25 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
           <Row k="Услуги (абонентские)" v={money(monthlyServices)} />
           <Row k="Хостинг баз 1С" v={money(hosting)} />
           <div className="flex justify-between border-t pt-2 font-semibold"><span>Итого в месяц</span><span>{money(monthly)}</span></div>
-          <div className={`flex justify-between ${paidNow >= monthly ? "text-ok" : "text-red"}`}>
-            <span>Оплачено за {periodLabel(period)}</span><span>{money(paidNow)}</span>
-          </div>
+          <Row k="Оплачено по" v={monthLabel(c.paidUntil)} />
+          {debt.amount == null
+            ? (monthly > 0 && <p className="text-warn">Нет данных об оплате</p>)
+            : <div className={`flex justify-between ${debt.amount > 0 ? "text-red" : "text-ok"}`}><span>Долг</span><span>{debt.amount > 0 ? `${money(debt.amount)} · ${debt.months} мес.` : "нет"}</span></div>}
         </div>
       </div>
+
+      {(c.contractNumber || c.contractDate || c.serviceSince || c.payMethod || c.payFrom || c.payTo || c.billingNote || c.needsCheck) && (
+        <section className="card mt-6 grid gap-x-8 gap-y-2 text-sm md:grid-cols-2">
+          <h2 className="font-semibold md:col-span-2">Договор и оплата {c.needsCheck && <Badge className="ml-2 bg-warn-bg text-warn">требует проверки</Badge>}</h2>
+          <Row k="№ договора" v={c.contractNumber} />
+          <Row k="Дата договора" v={c.contractDate && date(c.contractDate)} />
+          <Row k="Обслуживаем с" v={c.serviceSince && date(c.serviceSince)} />
+          <Row k="Способ оплаты" v={c.payMethod} />
+          <Row k="Откуда платят" v={c.payFrom} />
+          <Row k="Куда платят" v={c.payTo} />
+          {c.billingNote && <p className="whitespace-pre-wrap rounded-xl bg-soft p-3 text-xs text-muted md:col-span-2">{c.billingNote}</p>}
+        </section>
+      )}
 
       {/* Базы 1С */}
       <section className="card mt-6">
@@ -82,6 +103,13 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
                   {!b.active && <Badge className="bg-soft text-muted">отключена</Badge>}
                   {b.backup && <Badge className="bg-[rgba(30,154,96,.12)] text-ok">бэкап</Badge>}
                 </summary>
+                {(b.url || b.login || b.password) && (
+                  <div className="mt-3 grid gap-2 text-sm sm:grid-cols-3">
+                    <div className="min-w-0"><span className="text-muted">Ссылка: </span>{b.url ? <a href={b.url} target="_blank" rel="noreferrer" className="link break-all">{b.url}</a> : "—"}</div>
+                    {canEdit && <div><span className="text-muted">Пользователь: </span><span className="whitespace-pre-line">{b.login ?? "—"}</span></div>}
+                    {canEdit && <div><span className="text-muted">Пароль: </span>{b.password ? <Secret value={b.password} /> : "—"}</div>}
+                  </div>
+                )}
                 {b.comment && <p className="mt-2 text-sm text-muted">{b.comment}</p>}
                 {canEdit && (
                   <div className="mt-3 border-t pt-3">
@@ -219,7 +247,7 @@ function Row({ k, v }: { k: string; v: React.ReactNode }) {
   );
 }
 
-type B = { id: string; name: string; configuration: string | null; version: string | null; server: string | null; mode: string; users: number; hostingPrice: number; backup: boolean; active: boolean; comment: string | null };
+type B = { id: string; name: string; configuration: string | null; version: string | null; server: string | null; url: string | null; login: string | null; password: string | null; mode: string; users: number; hostingPrice: number; backup: boolean; active: boolean; comment: string | null };
 
 function BaseForm({ clientId, b }: { clientId: string; b?: B }) {
   return (
@@ -235,6 +263,9 @@ function BaseForm({ clientId, b }: { clientId: string; b?: B }) {
       </Field>
       <Field label="Версия релиза"><input name="version" defaultValue={b?.version ?? ""} className="input" placeholder="3.0.45.12" /></Field>
       <Field label="Сервер"><input name="server" defaultValue={b?.server ?? ""} className="input" placeholder="srv1c-01" /></Field>
+      <Field label="Ссылка на базу" className="sm:col-span-2"><input name="url" defaultValue={b?.url ?? ""} className="input" placeholder="http://nur-sultan.ddns.net:3333/comkz…" /></Field>
+      <Field label="Пользователь(и)"><textarea name="login" rows={1} defaultValue={b?.login ?? ""} className="input" /></Field>
+      <Field label="Пароль(и)"><textarea name="password" rows={1} defaultValue={b?.password ?? ""} className="input font-mono" /></Field>
       <Field label="Режим">
         <select name="mode" defaultValue={b?.mode ?? "Файловая"} className="input"><option>Файловая</option><option>Клиент-сервер</option></select>
       </Field>

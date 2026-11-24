@@ -2,13 +2,12 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { clientScope, requireUser } from "@/lib/auth";
 import { monthlyByClient } from "@/lib/billing";
-import { currentPeriod, dateTime, money, periodLabel } from "@/lib/format";
+import { dateTime, money } from "@/lib/format";
 import { Empty, PageHeader, PriorityBadge, Stat, StatusBadge } from "@/components/ui";
 
 export default async function Dashboard() {
   const user = await requireUser();
   const scope = clientScope(user);
-  const period = currentPeriod();
   const isAcc = user.role === "ACCOUNTANT";
 
   const ticketWhere = isAcc ? { client: { accountantId: user.id } } : {};
@@ -25,13 +24,13 @@ export default async function Dashboard() {
     }),
     db.client.groupBy({ by: ["source"], where: { status: "ACTIVE", ...scope }, _count: true }),
     isAcc ? Promise.resolve([]) : monthlyByClient(),
-    isAcc ? Promise.resolve([]) : db.payment.groupBy({ by: ["clientId"], where: { period }, _sum: { amount: true } }),
+    isAcc ? Promise.resolve([]) : db.payer.findMany({ where: { groupPrice: { gt: 0 } } }),
   ]);
 
-  const expected = billing.reduce((a, b) => a + b.total, 0);
-  const paidMap = new Map(paid.map((p) => [p.clientId, p._sum.amount ?? 0]));
-  const paidTotal = [...paidMap.values()].reduce((a, b) => a + b, 0);
-  const debtors = billing.filter((b) => b.total > 0 && (paidMap.get(b.client.id) ?? 0) < b.total).length;
+  const expected = billing.reduce((a, b) => a + b.total, 0) + paid.reduce((a, g) => a + g.groupPrice, 0);
+  const debtTotal = billing.reduce((a, b) => a + (b.debt.amount ?? 0), 0);
+  const debtors = billing.filter((b) => (b.debt.amount ?? 0) > 0).length;
+  const unknown = billing.filter((b) => b.total > 0 && b.debt.amount == null).length;
 
   return (
     <>
@@ -48,10 +47,11 @@ export default async function Dashboard() {
       </div>
 
       {!isAcc && (
-        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <Stat label={`Начислено за ${periodLabel(period)}`} value={money(expected)} href="/payments" />
-          <Stat label="Оплачено" value={money(paidTotal)} href="/payments" tone="text-ok" />
-          <Stat label="Не оплатили" value={debtors} href={`/payments?period=${period}`} tone={debtors ? "text-red" : ""} />
+        <div className="mt-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <Stat label="Начисление в месяц" value={money(expected)} href="/payments?filter=all" />
+          <Stat label="Долг клиентов" value={money(debtTotal)} href="/payments" tone={debtTotal ? "text-red" : ""} />
+          <Stat label="Должников" value={debtors} href="/payments" tone={debtors ? "text-red" : ""} />
+          <Stat label="Нет данных об оплате" value={unknown} href="/payments?filter=unknown" tone={unknown ? "text-warn" : ""} />
         </div>
       )}
 

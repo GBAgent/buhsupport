@@ -2,62 +2,113 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
-import { monthlyByClient } from "@/lib/billing";
-import { currentPeriod, date, money, periodLabel } from "@/lib/format";
+import { monthLabel, monthlyByClient, payerGroupDebt } from "@/lib/billing";
+import { date, money, periodLabel } from "@/lib/format";
+import { assignPayment } from "@/lib/actions/payments";
 import { Badge, Empty, PageHeader, Stat } from "@/components/ui";
 
-export default async function Payments({ searchParams }: { searchParams: Promise<{ period?: string; filter?: string }> }) {
+export default async function Payments({ searchParams }: { searchParams: Promise<{ filter?: string }> }) {
   const user = await requireUser();
   if (user.role === "ACCOUNTANT") redirect("/");
   const sp = await searchParams;
-  const period = /^\d{4}-\d{2}$/.test(sp.period ?? "") ? sp.period! : currentPeriod();
-  const [billing, payments] = await Promise.all([
+  const filter = sp.filter ?? "debt";
+
+  const [billing, groups, unmatched, recent, clients, payers] = await Promise.all([
     monthlyByClient(),
-    db.payment.findMany({ where: { period }, include: { client: true }, orderBy: { paidAt: "desc" } }),
+    db.payer.findMany({ where: { groupPrice: { gt: 0 } } }),
+    db.payment.findMany({ where: { clientId: null, payerId: null }, orderBy: { paidAt: "desc" } }),
+    db.payment.findMany({ where: { OR: [{ clientId: { not: null } }, { payerId: { not: null } }] }, include: { client: true, payer: true }, orderBy: { paidAt: "desc" }, take: 30 }),
+    db.client.findMany({ where: { status: { not: "LEFT" } }, select: { id: true, name: true, bin: true }, orderBy: { name: "asc" } }),
+    db.payer.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } }),
   ]);
-  const paid = new Map<string, number>();
-  for (const p of payments) paid.set(p.clientId, (paid.get(p.clientId) ?? 0) + p.amount);
 
-  const rows = billing
-    .filter((b) => b.total > 0 || paid.has(b.client.id))
-    .map((b) => ({ ...b, paid: paid.get(b.client.id) ?? 0 }))
-    .map((r) => ({ ...r, debt: Math.max(0, r.total - r.paid) }))
-    .filter((r) => (sp.filter === "debt" ? r.debt > 0 : true))
-    .sort((a, b) => b.debt - a.debt || a.client.name.localeCompare(b.client.name));
+  const billable = billing.filter((b) => b.total > 0);
+  const groupRows = groups.map((g) => ({ g, d: payerGroupDebt(g) }));
+  const expected = billable.reduce((a, b) => a + b.total, 0) + groups.reduce((a, g) => a + g.groupPrice, 0);
+  const debtSum = billable.reduce((a, b) => a + (b.debt.amount ?? 0), 0) + groupRows.reduce((a, r) => a + (r.d.amount ?? 0), 0);
+  const debtors = billable.filter((b) => (b.debt.amount ?? 0) > 0);
+  const unknown = billable.filter((b) => b.debt.amount == null);
+  const rows = (filter === "debt" ? debtors : filter === "unknown" ? unknown : billable)
+    .sort((a, b) => (b.debt.amount ?? -1) - (a.debt.amount ?? -1) || a.client.name.localeCompare(b.client.name));
 
-  const expected = billing.reduce((a, b) => a + b.total, 0);
-  const paidSum = payments.reduce((a, p) => a + p.amount, 0);
-  const debtSum = billing.reduce((a, b) => a + Math.max(0, b.total - (paid.get(b.client.id) ?? 0)), 0);
+  const tabs = [["debt", `Должники (${debtors.length})`], ["unknown", `Нет данных (${unknown.length})`], ["all", `Все платные (${billable.length})`]];
 
   return (
     <>
-      <PageHeader title="Оплаты" sub={`За ${periodLabel(period)}`}>
-        <form className="flex gap-2">
-          <input type="month" name="period" defaultValue={period} className="input" />
-          <select name="filter" defaultValue={sp.filter} className="input"><option value="">Все</option><option value="debt">Только должники</option></select>
-          <button className="btn-ghost">Показать</button>
-        </form>
-      </PageHeader>
-      <div className="mb-4 grid gap-4 sm:grid-cols-3">
-        <Stat label="Начислено (услуги + хостинг)" value={money(expected)} />
-        <Stat label="Оплачено" value={money(paidSum)} tone="text-ok" />
-        <Stat label="Задолженность" value={money(debtSum)} tone={debtSum ? "text-red" : ""} />
+      <PageHeader title="Оплаты" sub="Долги считаются от «оплачено по» до прошлого месяца включительно" />
+      <div className="mb-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <Stat label="Начисление в месяц" value={money(expected)} />
+        <Stat label="Долг (известный)" value={money(debtSum)} tone={debtSum ? "text-red" : ""} />
+        <Stat label="Должников" value={debtors.length} tone={debtors.length ? "text-red" : ""} />
+        <Stat label="Нет данных об оплате" value={unknown.length} tone={unknown.length ? "text-warn" : ""} />
       </div>
 
+      {unmatched.length > 0 && (
+        <section className="card mb-6">
+          <h2 className="mb-1 font-semibold">Неопознанные платежи <Badge className="ml-1 bg-red text-white">{unmatched.length}</Badge></h2>
+          <p className="mb-3 text-sm text-muted">Деньги пришли, но непонятно от кого. Выберите клиента или плательщика — «оплачено по» сдвинется автоматически.</p>
+          <div className="overflow-x-auto">
+            <table className="table">
+              <thead><tr><th>Дата</th><th>Сумма</th><th>За</th><th>Откуда</th><th>Привязать к</th></tr></thead>
+              <tbody>
+                {unmatched.map((p) => (
+                  <tr key={p.id}>
+                    <td className="whitespace-nowrap">{date(p.paidAt)}</td>
+                    <td className="font-medium whitespace-nowrap">{money(p.amount)}</td>
+                    <td className="text-xs">{periodLabel(p.period)}{p.comment && <div className="text-muted">{p.comment}</div>}</td>
+                    <td className="text-xs">{p.method}<div className="text-muted">{p.source}</div></td>
+                    <td>
+                      <form action={assignPayment} className="flex gap-2">
+                        <input type="hidden" name="id" value={p.id} />
+                        <select name="target" required className="input min-w-56 py-1.5">
+                          <option value="">— выбрать —</option>
+                          <optgroup label="Плательщики">{payers.map((x) => <option key={x.id} value={`payer:${x.id}`}>{x.name}</option>)}</optgroup>
+                          <optgroup label="Компании">{clients.map((x) => <option key={x.id} value={`client:${x.id}`}>{x.name}{x.bin ? ` · ${x.bin}` : ""}</option>)}</optgroup>
+                        </select>
+                        <button className="btn px-3 py-1.5">OK</button>
+                      </form>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
+
+      {groupRows.length > 0 && (
+        <section className="card mb-6">
+          <h2 className="mb-3 font-semibold">Групповые тарифы</h2>
+          <table className="table"><tbody>
+            {groupRows.map(({ g, d }) => (
+              <tr key={g.id}>
+                <td><Link href={`/payers/${g.id}`} className="link">{g.name}</Link></td>
+                <td>{money(g.groupPrice)}/мес</td>
+                <td>оплачено по {monthLabel(g.paidUntil)}</td>
+                <td>{d.amount == null ? <span className="text-warn">нет данных</span> : d.amount > 0 ? <Badge className="bg-red-bg text-red">{money(d.amount)}</Badge> : <span className="text-ok">оплачено</span>}</td>
+              </tr>
+            ))}
+          </tbody></table>
+        </section>
+      )}
+
+      <div className="mb-3 flex flex-wrap gap-1">
+        {tabs.map(([k, l]) => (
+          <Link key={k} href={`/payments?filter=${k}`} className={`rounded-full px-4 py-2 text-sm font-medium transition ${filter === k ? "bg-ink text-white" : "bg-white text-ink hover:bg-soft"}`}>{l}</Link>
+        ))}
+      </div>
       <div className="card overflow-x-auto p-0">
-        {rows.length === 0 ? <Empty>Нет начислений. Подключите клиентам услуги или базы 1С.</Empty> : (
+        {rows.length === 0 ? <Empty>Пусто</Empty> : (
           <table className="table">
-            <thead><tr><th>Клиент</th><th>Бухгалтер</th><th>Услуги</th><th>Хостинг 1С</th><th>Итого</th><th>Оплачено</th><th>Долг</th></tr></thead>
+            <thead><tr><th>Компания</th><th>Плательщик</th><th>В месяц</th><th>Оплачено по</th><th>Долг</th></tr></thead>
             <tbody>
               {rows.map((r) => (
                 <tr key={r.client.id}>
                   <td><Link className="link" href={`/clients/${r.client.id}`}>{r.client.name}</Link></td>
-                  <td className="text-xs">{r.client.accountantNote ?? ""}</td>
-                  <td>{money(r.services)}</td>
-                  <td>{money(r.hosting)}<span className="text-xs text-muted"> ({r.client.bases.length} баз)</span></td>
-                  <td className="font-medium">{money(r.total)}</td>
-                  <td className="text-ok">{money(r.paid)}</td>
-                  <td>{r.debt > 0 ? <Badge className="bg-red-bg text-red">{money(r.debt)}</Badge> : <Badge className="bg-[rgba(30,154,96,.12)] text-ok">оплачено</Badge>}</td>
+                  <td className="text-xs">{r.client.payer ? <Link className="link" href={`/payers/${r.client.payer.id}`}>{r.client.payer.name}</Link> : "—"}</td>
+                  <td className="whitespace-nowrap">{money(r.total)}</td>
+                  <td className="whitespace-nowrap">{monthLabel(r.client.paidUntil)}</td>
+                  <td className="whitespace-nowrap">{r.debt.amount == null ? <span className="text-xs text-warn">нет данных</span> : r.debt.amount > 0 ? <Badge className="bg-red-bg text-red">{money(r.debt.amount)} · {r.debt.months} мес.</Badge> : <span className="text-ok">оплачено</span>}</td>
                 </tr>
               ))}
             </tbody>
@@ -65,19 +116,20 @@ export default async function Payments({ searchParams }: { searchParams: Promise
         )}
       </div>
 
-      <h2 className="mb-2 mt-8 font-semibold">Поступления за период</h2>
+      <h2 className="mb-2 mt-8 font-semibold">Последние поступления</h2>
       <div className="card overflow-x-auto p-0">
-        {payments.length === 0 ? <Empty>Оплат нет. Оплаты вносятся в карточке клиента.</Empty> : (
+        {recent.length === 0 ? <Empty>Оплат пока нет. Вносятся в карточке клиента или плательщика.</Empty> : (
           <table className="table">
-            <thead><tr><th>Дата</th><th>Клиент</th><th>Сумма</th><th>Способ</th><th>Комментарий</th></tr></thead>
+            <thead><tr><th>Дата</th><th>От кого</th><th>Сумма</th><th>За</th><th>Способ</th><th>Комментарий</th></tr></thead>
             <tbody>
-              {payments.map((p) => (
+              {recent.map((p) => (
                 <tr key={p.id}>
                   <td>{date(p.paidAt)}</td>
-                  <td><Link className="link" href={`/clients/${p.clientId}`}>{p.client.name}</Link></td>
+                  <td>{p.client ? <Link className="link" href={`/clients/${p.client.id}`}>{p.client.name}</Link> : p.payer ? <Link className="link" href={`/payers/${p.payer.id}`}>{p.payer.name}</Link> : "—"}</td>
                   <td className="font-medium">{money(p.amount)}</td>
+                  <td>{periodLabel(p.period)}</td>
                   <td>{p.method}</td>
-                  <td className="text-xs">{p.comment}</td>
+                  <td className="text-xs">{p.comment}{p.source && <div className="text-muted">{p.source}</div>}</td>
                 </tr>
               ))}
             </tbody>

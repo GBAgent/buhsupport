@@ -17,3 +17,12 @@ export const dateVal = (fd: FormData, k: string) => {
   const v = str(fd, k);
   return v ? new Date(v) : null;
 };
+/** <input type="month"> → 1-е число месяца (UTC) */
+export const monthVal = (fd: FormData, k: string) => {
+  const v = str(fd, k);
+  const m = v?.match(/^(\d{4})-(\d{2})/);
+  return m ? new Date(Date.UTC(+m[1], +m[2] - 1, 1)) : null;
+};
+export const toMonthInput = (d: Date | null | undefined) =>
+  d ? `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}` : "";
+export const toDateInput = (d: Date | null | undefined) => (d ? d.toISOString().slice(0, 10) : "");

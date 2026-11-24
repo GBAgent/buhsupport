@@ -3,7 +3,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
-import { bool, dateVal, int, req, str } from "@/lib/forms";
+import { bool, dateVal, int, monthVal, req, str } from "@/lib/forms";
+import { advancePaidUntil } from "@/lib/actions/payments";
 import type { ClientStatus } from "@prisma/client";
 
 function clientData(fd: FormData) {
@@ -22,6 +23,16 @@ function clientData(fd: FormData) {
     accountantId: str(fd, "accountantId"),
     accountantNote: str(fd, "accountantNote"),
     notes: str(fd, "notes"),
+    payerId: str(fd, "payerId"),
+    contractNumber: str(fd, "contractNumber"),
+    contractDate: dateVal(fd, "contractDate"),
+    serviceSince: dateVal(fd, "serviceSince"),
+    paidUntil: monthVal(fd, "paidUntil"),
+    payMethod: str(fd, "payMethod"),
+    payFrom: str(fd, "payFrom"),
+    payTo: str(fd, "payTo"),
+    billingNote: str(fd, "billingNote"),
+    needsCheck: bool(fd, "needsCheck"),
   };
 }
 
@@ -104,6 +115,9 @@ export async function saveBase(fd: FormData) {
     configuration: str(fd, "configuration"),
     version: str(fd, "version"),
     server: str(fd, "server"),
+    url: str(fd, "url"),
+    login: str(fd, "login"),
+    password: str(fd, "password"),
     mode: str(fd, "mode") ?? "Файловая",
     users: int(fd, "users", 1),
     hostingPrice: int(fd, "hostingPrice"),
@@ -128,11 +142,13 @@ export async function deleteBase(fd: FormData) {
 export async function addPayment(fd: FormData) {
   await guard();
   const clientId = req(fd, "clientId");
+  const period = req(fd, "period");
+  await advancePaidUntil({ clientId }, period);
   await db.payment.create({
     data: {
       clientId,
       amount: int(fd, "amount"),
-      period: req(fd, "period"),
+      period,
       paidAt: dateVal(fd, "paidAt") ?? new Date(),
       method: str(fd, "method") ?? "Kaspi",
       comment: str(fd, "comment"),
@@ -146,6 +162,14 @@ export async function deletePayment(fd: FormData) {
   const u = await requireUser();
   if (u.role !== "ADMIN") throw new Error("Только администратор");
   const p = await db.payment.delete({ where: { id: req(fd, "id") } });
-  revalidatePath(`/clients/${p.clientId}`);
+  if (p.clientId) revalidatePath(`/clients/${p.clientId}`);
   revalidatePath("/payments");
+}
+
+export async function markChecked(fd: FormData) {
+  await guard();
+  const id = req(fd, "id");
+  await db.client.update({ where: { id }, data: { needsCheck: false } });
+  revalidatePath(`/clients/${id}`);
+  revalidatePath("/clients");
 }

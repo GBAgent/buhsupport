@@ -1,3 +1,4 @@
+import { toDateInput, toMonthInput } from "@/lib/forms";
 import { notFound, redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -24,7 +25,16 @@ export default async function EditClient({ params }: { params: Promise<{ id: str
           </form>
         )}
       </PageHeader>
-      <ClientForm client={client} users={users} />
+      <ClientForm
+        client={{
+          ...client,
+          contractDate: toDateInput(client.contractDate),
+          serviceSince: toDateInput(client.serviceSince),
+          paidUntil: toMonthInput(client.paidUntil),
+        }}
+        users={users}
+        payers={await db.payer.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } })}
+      />
     </>
   );
 }

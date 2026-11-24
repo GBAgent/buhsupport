@@ -55,6 +55,22 @@ model Client {
   accountantNote String? // бухгалтер клиента, если не наш сотрудник
 
   notes     String?
+
+  // Плательщик — кто приводит и оплачивает (часто бухгалтер с несколькими компаниями)
+  payerId String?
+  payer   Payer?  @relation(fields: [payerId], references: [id], onDelete: SetNull)
+
+  // Договор и оплата хостинга
+  contractNumber String?
+  contractDate   DateTime?
+  serviceSince   DateTime?
+  paidUntil      DateTime? // последний оплаченный месяц (1-е число)
+  payMethod      String?   // Kaspi, безнал, наличные, бесплатно
+  payFrom        String?   // откуда платят (банк/карта)
+  payTo          String?   // куда (наш счёт/карта)
+  billingNote    String?   // откуда оценка, платежи в 1С и т.п.
+  needsCheck     Boolean   @default(false) // данные требуют проверки
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -62,6 +78,20 @@ model Client {
   bases    Base1C[]
   payments Payment[]
   tickets  Ticket[]
+}
+
+model Payer {
+  id         String    @id @default(cuid())
+  name       String    @unique
+  phone      String?
+  note       String?
+  groupPrice Int       @default(0) // фиксированная сумма за все компании, ₸/мес (0 — считаем по базам)
+  paidUntil  DateTime? // для групповой оплаты
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  clients  Client[]
+  payments Payment[]
 }
 
 model Service {
@@ -98,6 +128,9 @@ model Base1C {
   configuration String?  // БП 3.0, ЗУП 3.1, УТ 11...
   version       String?
   server        String?  // сервер / кластер
+  url           String?  // ссылка на базу (веб-клиент / RDP)
+  login         String?  // пользователи 1С
+  password      String?  // пароли (видят только админ и IT)
   mode          String   @default("Файловая") // Файловая / Клиент-сервер
   users         Int      @default(1)
   hostingPrice  Int      @default(0) // ₸ в месяц
@@ -109,13 +142,16 @@ model Base1C {
 
 model Payment {
   id        String   @id @default(cuid())
-  clientId  String
-  client    Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  clientId  String?  // пусто — неопознанный платёж
+  client    Client?  @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  payerId   String?  // групповая оплата плательщика
+  payer     Payer?   @relation(fields: [payerId], references: [id], onDelete: SetNull)
   amount    Int      // ₸
   period    String   // YYYY-MM — за какой месяц
   paidAt    DateTime @default(now())
   method    String   @default("Kaspi") // Kaspi, безнал, наличные
   comment   String?
+  source    String?  // откуда платёж: «1С: ИП Абылай, провёл …»
   createdAt DateTime @default(now())
 }
 
