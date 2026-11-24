@@ -39,7 +39,7 @@ export default async function TicketPage({ params }: { params: Promise<{ number:
               <div><span className="text-muted">Компания: </span>{t.client ? <Link className="link" href={`/clients/${t.client.id}`}>{t.client.name}</Link> : t.company ?? "—"}</div>
               <div><span className="text-muted">БИН/ИИН: </span><span className="font-mono">{t.bin ?? t.client?.bin ?? "—"}</span></div>
               <div><span className="text-muted">Клиент: </span>{t.contact?.startsWith("@") ? <a className="link" target="_blank" href={`https://t.me/${t.contact.slice(1)}`}>{t.contact}</a> : t.contact ?? "—"}</div>
-              <div><span className="text-muted">Исполнитель: </span>{t.assignee?.name ?? "—"}</div>
+              <div><span className="text-muted">Исполнитель: </span>{t.assignee?.name ?? (t.assigneeTg ? `@${t.assigneeTg}` : "—")}</div>
               {t.closedAt && <div><span className="text-muted">Закрыта: </span>{dateTime(t.closedAt)}</div>}
             </div>
             {!t.client && t.bin && user.role !== "ACCOUNTANT" && (

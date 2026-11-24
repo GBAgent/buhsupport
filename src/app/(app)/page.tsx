@@ -74,7 +74,7 @@ export default async function Dashboard() {
                       </td>
                       <td><StatusBadge s={t.status} /></td>
                       <td><PriorityBadge p={t.priority} /></td>
-                      <td className="text-xs text-muted">{t.assignee?.name ?? "—"}<br />{dateTime(t.createdAt)}</td>
+                      <td className="text-xs text-muted">{t.assignee?.name ?? (t.assigneeTg ? `@${t.assigneeTg}` : "—")}<br />{dateTime(t.createdAt)}</td>
                     </tr>
                   ))}
                 </tbody>

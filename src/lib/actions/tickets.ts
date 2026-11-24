@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { req, str } from "@/lib/forms";
 import type { Priority, TicketStatus } from "@prisma/client";
+import { syncTicket } from "@/lib/telegram/tickets";
 
 export async function createTicket(fd: FormData) {
   const u = await requireUser();
@@ -25,6 +26,7 @@ export async function createTicket(fd: FormData) {
     },
   });
   await db.ticketComment.create({ data: { ticketId: t.id, authorId: u.id, text: "Заявка создана в кабинете" } });
+  await syncTicket(t.id);
   revalidatePath("/tickets");
   redirect(`/tickets/${t.number}`);
 }
@@ -48,6 +50,7 @@ export async function updateTicket(fd: FormData) {
     where: { id },
     data: {
       status, assigneeId, priority, clientId,
+      ...(assigneeId !== old.assigneeId ? { assigneeTg: null } : {}),
       category: str(fd, "category") ?? old.category,
       closedAt: status === "DONE" || status === "CANCELLED" ? (old.closedAt ?? new Date()) : null,
     },
@@ -58,6 +61,7 @@ export async function updateTicket(fd: FormData) {
       data: { ticketId: id, authorId: u.id, text: [changes.join(", "), comment].filter(Boolean).join("\n") },
     });
   }
+  if (changes.length) await syncTicket(id, { statusChanged: status !== old.status });
   revalidatePath(`/tickets/${old.number}`);
   revalidatePath("/tickets");
 }
@@ -69,6 +73,7 @@ export async function takeTicket(fd: FormData) {
     data: { assigneeId: u.id, status: "IN_PROGRESS" },
   });
   await db.ticketComment.create({ data: { ticketId: t.id, authorId: u.id, text: "Взял в работу" } });
+  await syncTicket(t.id, { statusChanged: true });
   revalidatePath(`/tickets/${t.number}`);
   revalidatePath("/tickets");
 }

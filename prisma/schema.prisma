@@ -184,8 +184,9 @@ model Ticket {
   assignee    User?        @relation("TicketAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
   source      String       @default("web") // telegram / web / phone
   contact     String?      // @telegram клиента / телефон
-  telegramChatId String?
-  telegramMessageId String?
+  telegramChatId String?    // чат клиента с ботом — туда уходят уведомления
+  telegramMessageId String? // сообщение заявки в теме группы
+  assigneeTg  String?       // @ник исполнителя из Telegram (если не найден среди сотрудников)
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
   closedAt    DateTime?
@@ -201,4 +202,18 @@ model TicketComment {
   author    User?    @relation(fields: [authorId], references: [id], onDelete: SetNull)
   text      String
   createdAt DateTime @default(now())
+}
+
+/** Настройки (привязка группы Telegram и т.п.) */
+model Setting {
+  key   String @id
+  value String
+}
+
+/** Шаг диалога клиента с ботом (бот работает через вебхук, состояние храним в БД) */
+model TelegramSession {
+  chatId    String   @id
+  step      String
+  data      Json     @default("{}")
+  updatedAt DateTime @updatedAt
 }

@@ -17,7 +17,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     { href: "/bases", label: "Базы 1С", icon: "db" },
     ...(user.role !== "ACCOUNTANT" ? [{ href: "/payers", label: "Плательщики", icon: "wallet" }, { href: "/payments", label: "Оплаты", icon: "pay" }] : []),
     { href: "/services", label: "Услуги", icon: "tools" },
-    ...(user.role === "ADMIN" ? [{ href: "/users", label: "Сотрудники", icon: "users" }, { href: "/import", label: "Импорт", icon: "upload" }] : []),
+    ...(user.role === "ADMIN" ? [{ href: "/users", label: "Сотрудники", icon: "users" }, { href: "/import", label: "Импорт", icon: "upload" }, { href: "/telegram", label: "Telegram", icon: "send" }] : []),
   ];
   const initials = user.name.split(/\s+/).map((w) => w[0]).slice(0, 2).join("").toUpperCase();
 

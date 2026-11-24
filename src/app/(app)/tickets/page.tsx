@@ -85,7 +85,7 @@ export default async function Tickets({ searchParams }: { searchParams: SP }) {
                   <td className="max-w-xs"><div className="line-clamp-2">{t.description}</div><div className="text-xs text-muted">{t.contact} {t.source === "telegram" && "· Telegram"}</div></td>
                   <td><PriorityBadge p={t.priority} /></td>
                   <td><StatusBadge s={t.status} /></td>
-                  <td className="text-xs">{t.assignee?.name ?? "—"}</td>
+                  <td className="text-xs">{t.assignee?.name ?? (t.assigneeTg ? `@${t.assigneeTg}` : "—")}</td>
                   <td className="whitespace-nowrap text-xs text-muted">{dateTime(t.createdAt)}</td>
                 </tr>
               ))}
