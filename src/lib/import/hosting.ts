@@ -184,7 +184,6 @@ export async function importHostingWorkbook(db: PrismaClient, buf: ArrayBuffer):
     const baseData = {
       url,
       login: text(get("Пользователь")),
-      password: text(get("Пароль")),
       hostingPrice: price,
       active: status !== "LEFT",
     };

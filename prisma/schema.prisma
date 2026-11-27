@@ -130,7 +130,6 @@ model Base1C {
   server        String?  // сервер / кластер
   url           String?  // ссылка на базу (веб-клиент / RDP)
   login         String?  // пользователи 1С
-  password      String?  // пароли (видят только админ и IT)
   mode          String   @default("Файловая") // Файловая / Клиент-сервер
   users         Int      @default(1)
   hostingPrice  Int      @default(0) // ₸ в месяц

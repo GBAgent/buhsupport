@@ -5,7 +5,6 @@ import { requireUser } from "@/lib/auth";
 import { CLIENT_STATUS_LABEL, PAY_METHODS, currentPeriod, date, dateTime, money, periodLabel } from "@/lib/format";
 import { Badge, Empty, Field, PageHeader, PriorityBadge, StatusBadge } from "@/components/ui";
 import { clientDebt, monthLabel } from "@/lib/billing";
-import { Secret } from "@/components/Secret";
 import {
   markChecked,
   addClientService, addPayment, deleteBase, deleteClientService, deletePayment, saveBase, toggleClientService,
@@ -103,11 +102,10 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
                   {!b.active && <Badge className="bg-soft text-muted">отключена</Badge>}
                   {b.backup && <Badge className="bg-[rgba(30,154,96,.12)] text-ok">бэкап</Badge>}
                 </summary>
-                {(b.url || b.login || b.password) && (
-                  <div className="mt-3 grid gap-2 text-sm sm:grid-cols-3">
+                {(b.url || b.login) && (
+                  <div className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
                     <div className="min-w-0"><span className="text-muted">Ссылка: </span>{b.url ? <a href={b.url} target="_blank" rel="noreferrer" className="link break-all">{b.url}</a> : "—"}</div>
                     {canEdit && <div><span className="text-muted">Пользователь: </span><span className="whitespace-pre-line">{b.login ?? "—"}</span></div>}
-                    {canEdit && <div><span className="text-muted">Пароль: </span>{b.password ? <Secret value={b.password} /> : "—"}</div>}
                   </div>
                 )}
                 {b.comment && <p className="mt-2 text-sm text-muted">{b.comment}</p>}
@@ -247,7 +245,7 @@ function Row({ k, v }: { k: string; v: React.ReactNode }) {
   );
 }
 
-type B = { id: string; name: string; configuration: string | null; version: string | null; server: string | null; url: string | null; login: string | null; password: string | null; mode: string; users: number; hostingPrice: number; backup: boolean; active: boolean; comment: string | null };
+type B = { id: string; name: string; configuration: string | null; version: string | null; server: string | null; url: string | null; login: string | null; mode: string; users: number; hostingPrice: number; backup: boolean; active: boolean; comment: string | null };
 
 function BaseForm({ clientId, b }: { clientId: string; b?: B }) {
   return (
@@ -265,7 +263,6 @@ function BaseForm({ clientId, b }: { clientId: string; b?: B }) {
       <Field label="Сервер"><input name="server" defaultValue={b?.server ?? ""} className="input" placeholder="srv1c-01" /></Field>
       <Field label="Ссылка на базу" className="sm:col-span-2"><input name="url" defaultValue={b?.url ?? ""} className="input" placeholder="http://nur-sultan.ddns.net:3333/comkz…" /></Field>
       <Field label="Пользователь(и)"><textarea name="login" rows={1} defaultValue={b?.login ?? ""} className="input" /></Field>
-      <Field label="Пароль(и)"><textarea name="password" rows={1} defaultValue={b?.password ?? ""} className="input font-mono" /></Field>
       <Field label="Режим">
         <select name="mode" defaultValue={b?.mode ?? "Файловая"} className="input"><option>Файловая</option><option>Клиент-сервер</option></select>
       </Field>

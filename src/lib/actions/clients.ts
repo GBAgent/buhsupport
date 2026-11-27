@@ -117,7 +117,6 @@ export async function saveBase(fd: FormData) {
     server: str(fd, "server"),
     url: str(fd, "url"),
     login: str(fd, "login"),
-    password: str(fd, "password"),
     mode: str(fd, "mode") ?? "Файловая",
     users: int(fd, "users", 1),
     hostingPrice: int(fd, "hostingPrice"),
